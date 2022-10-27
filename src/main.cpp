@@ -1,62 +1,172 @@
-﻿// CMakeProject3.cpp : Defines the entry point for the application.
-//
+﻿/*
+ * Teatris
+ * Tetris game prototype for C++ and SDL2 practice.
+**/
 
-#include <iostream>
 
+// INCLUDES
+
+// System librares
 #include <SDL.h>
+#include <iostream>
+#include <time.h>
+#include <vector>
 
-using namespace std;
+// User librares
+#include "constants.h"
+#include "variables.h"
+#include "structs.h"
+#include "piece.h"
 
-int main(int argc, char* argv[])
+
+// FUNCTIONS
+
+// Initialize SDL and create window
+void init();
+
+// Frees media and shuts down SDL
+void close();
+
+
+// OBJECTS
+
+// The field
+Field field;
+
+// Randomly generated moving piece
+Piece piece;
+
+
+// MAIN FUNCTION
+
+int main(int argc, char* args[])
 {
-	if (SDL_Init(SDL_INIT_VIDEO) != 0)
+	// Initialize SDL
+	init();
+
+	// Main loop flag
+	bool quit = false;
+
+	// Event handler
+	SDL_Event event;
+
+	// Counter for total frames drawed
+	short frameCount = 0;
+
+	//Current time start time
+	Uint32 startTime = 0;
+
+	// Create field
+	field.create();
+
+	// Spawn pseudo random piece based on miliseconds elapsed from execution start
+	time_t t;
+	srand((unsigned)time(&t));
+	piece.spawn(SPAWN_X, SPAWN_Y);
+
+	// Game loop
+	while (!quit)
 	{
-		return 1;
-	}
+		// Hhandle events
+		SDL_PollEvent(&event);
 
-	SDL_Window* window = SDL_CreateWindow(
-		"SDL Cmake Template",
-		SDL_WINDOWPOS_UNDEFINED,
-		SDL_WINDOWPOS_UNDEFINED,
-		640,
-		480,
-		0
-	);
-
-	SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
-	SDL_SetRenderDrawColor(renderer, 30, 30, 30, SDL_ALPHA_OPAQUE);
-	SDL_RenderClear(renderer);
-	SDL_RenderPresent(renderer);
-
-	bool isOn = true;
-	while (isOn)
-	{
-		// input handling
-		SDL_Event event;
-		while (SDL_PollEvent(&event))
+		// User requests quit
+		if (event.type == SDL_QUIT)
 		{
-			if (event.type == SDL_QUIT)
-			{
-				isOn = false;
-			}
-			if (event.type == SDL_WINDOWEVENT
-				&& event.window.event == SDL_WINDOWEVENT_CLOSE
-				&& event.window.windowID == SDL_GetWindowID(window))
-			{
-				isOn = false;
-			}
-			if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)
-			{
-				isOn = false;
-			}
+			quit = true;
+			break;
 		}
 
-		SDL_Delay(1);
+		// Clear window
+		SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+		SDL_RenderClear(gRenderer);
+
+		// User presses a key
+		if (event.type == SDL_KEYDOWN)
+		{
+			// Move piece based on key press
+			switch (event.key.keysym.sym)
+			{
+			case SDLK_UP:
+				printf("Key u pressed.");
+				piece.rotate();
+				break;
+
+			case SDLK_DOWN:
+				printf("Key d pressed.");
+				//field = piece.movePiece(field, 3);
+				break;
+
+			case SDLK_LEFT:
+				field = piece.movePiece(field, 2);
+				break;
+
+			case SDLK_RIGHT:
+				field = piece.movePiece(field, 0);
+				break;
+			case SDLK_RETURN:
+				printf("Seconds since start: %d .", (SDL_GetTicks() - startTime) / 1000);
+				break;
+			default:
+				printf("Other Key pressed.");
+				break;
+			}
+		}
+		// Fall one row every 20 frames
+		if (frameCount % 20 == 0)
+		{
+			// Move piece down
+			field = piece.movePiece(field, -1);
+
+			// Reset framecount
+			frameCount = 0;
+		}
+
+		// Draw current field
+		field.draw();
+
+		// Render scene
+		SDL_RenderPresent(gRenderer);
+
+		// Increase framecount
+		frameCount++;
+
+		// Delay to limit framerate
+		SDL_Delay(25);
 	}
 
-	SDL_DestroyRenderer(renderer);
-	SDL_DestroyWindow(window);
-	SDL_Quit();
+	// Quit SDL
+	close();
 
 	return 0;
+}
+
+
+// FUNCTION DEFINITION
+
+void init()
+{
+	// Initialize SDL
+	SDL_Init(SDL_INIT_VIDEO);
+
+	// Create window
+	gWindow = SDL_CreateWindow("Teatris", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
+
+	// Create renderer
+	gRenderer = SDL_CreateRenderer(gWindow, -1, 0);
+
+	// Initialize renderer color
+	SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+}
+
+void close()
+{
+	// Destroy window and renderer
+	SDL_DestroyWindow(gWindow);
+	SDL_DestroyRenderer(gRenderer);
+	gWindow = nullptr;
+	gRenderer = nullptr;
+
+	// Quit SDL
+	SDL_Quit();
 }
